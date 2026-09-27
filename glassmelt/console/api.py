@@ -118,7 +118,8 @@ class ConsoleAPI:
         return self._guard(lambda: self.platform.clear_furnace(reason))
 
     def release_ignition_latch(self, payload: dict) -> dict:
-        return self._guard(lambda: self.platform.release_ignition_latch())
+        reason = str(payload.get("reason", "控制台人工确认解除闩锁"))
+        return self._guard(lambda: self.platform.release_ignition_latch(reason=reason))
 
     def calibrate(self, payload: dict) -> dict:
         offset = float(payload.get("offset_kg", 0.0))

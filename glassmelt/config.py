@@ -1,9 +1,10 @@
 """平台配置。
 
 配置来自 YAML（由 vendored PyYAML 解析），覆盖玻璃液面带、熔化温度区间、
-助燃风与燃气上限、供料道稳温带与保持时间、退火告警阈值、料滴质量公差、
-合模力下限、网带快慢速与投料秤标定范围。任何缺失或越界取值都在装配阶段
-抛出 :class:`ConfigError`，不允许带着半份配置启动控制链。
+助燃风与燃气上限、点火分级处置（尝试上限与吹扫递增）、供料道稳温带与保持
+时间、退火告警阈值、料滴质量公差、合模力下限、网带快慢速与投料秤标定范围。
+任何缺失或越界取值都在装配阶段抛出 :class:`ConfigError`，不允许带着半份
+配置启动控制链。
 """
 
 from __future__ import annotations
@@ -99,6 +100,9 @@ class BurnerLimits:
     ignition_timeout_s: float
     zone_count: int
     flame_min_temp_c: float
+    ignite_max_attempts: int
+    relight_max_attempts: int
+    purge_escalation_pct: float
 
     @classmethod
     def from_mapping(cls, section: Mapping[str, Any]) -> "BurnerLimits":
@@ -108,6 +112,9 @@ class BurnerLimits:
             ignition_timeout_s=_number(section, "ignition_timeout_s", minimum=0.1),
             zone_count=int(_number(section, "zone_count", minimum=1.0)),
             flame_min_temp_c=_number(section, "flame_min_temp_c"),
+            ignite_max_attempts=int(_number(section, "ignite_max_attempts", minimum=1.0)),
+            relight_max_attempts=int(_number(section, "relight_max_attempts", minimum=1.0)),
+            purge_escalation_pct=_number(section, "purge_escalation_pct", minimum=0.0),
         )
         if limits.air_min_flow_m3_h <= 0:
             raise ConfigError("助燃风最小流量必须为正", component="config")
@@ -124,6 +131,13 @@ class BurnerLimits:
         """测得的火焰温度是否达到判燃下限。"""
 
         return float(temperature_c) >= self.flame_min_temp_c
+
+    def retry_purge_flow_m3_h(self, streak: int) -> float:
+        """按连败次数拉长的吹扫风量：连败越多，炉膛置换风量越大。"""
+
+        base = self.air_min_flow_m3_h * 0.9
+        factor = 1.0 + self.purge_escalation_pct * max(0, int(streak) - 1)
+        return base * factor
 
     def zone_names(self) -> tuple[str, ...]:
         """按分区数生成稳定的分区名。"""
@@ -413,6 +427,9 @@ def default_config() -> PlatformConfig:
             ignition_timeout_s=6.0,
             zone_count=6,
             flame_min_temp_c=660.0,
+            ignite_max_attempts=3,
+            relight_max_attempts=2,
+            purge_escalation_pct=0.35,
         ),
         forehearth=ForehearthLimits(
             stable_band_c=6.0,
@@ -479,6 +496,9 @@ def config_to_mapping(cfg: PlatformConfig) -> dict:
                 "ignition_timeout_s": cfg.burner.ignition_timeout_s,
                 "zone_count": cfg.burner.zone_count,
                 "flame_min_temp_c": cfg.burner.flame_min_temp_c,
+                "ignite_max_attempts": cfg.burner.ignite_max_attempts,
+                "relight_max_attempts": cfg.burner.relight_max_attempts,
+                "purge_escalation_pct": cfg.burner.purge_escalation_pct,
             },
             "forehearth": {
                 "stable_band_c": cfg.forehearth.stable_band_c,

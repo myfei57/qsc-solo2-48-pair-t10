@@ -2,9 +2,9 @@
 
 三个页面分别对应总览、操作与记录。页面本身只做展示：数据全部通过
 ``/api/state``、``/api/trend``、``/api/alarms`` 拉取，页面里的按钮走
-``/api/batch/start``、``/api/burner/ignite``、``/api/forehearth/gate``、
-``/api/mold/blow``、``/api/lehr/reset`` 与 ``/api/cycle``，不内嵌任何业务
-逻辑。
+``/api/batch/start``、``/api/burner/ignite``、``/api/burner/release``、
+``/api/forehearth/gate``、``/api/mold/blow``、``/api/lehr/reset`` 与
+``/api/cycle``，不内嵌任何业务逻辑。
 """
 
 from __future__ import annotations
@@ -82,6 +82,7 @@ def _operations(path: str) -> str:
             "<button onclick=\"act('/api/batch/start', {path: 'resume'})\">恢复投料</button>"
             "<button onclick=\"act('/api/burner/ignite', {path: 'ignite'})\">点火</button>"
             "<button onclick=\"act('/api/burner/ignite', {path: 'reignite', reason: '控制台'})\">重新点火</button>"
+            "<button class='warn' onclick=\"act('/api/burner/release', {reason: '控制台人工确认解除闩锁'})\">解除点火闩锁</button>"
             "<pre id='out-action'>等待操作</pre></section>"
             "<section><h2>供料与成型</h2>"
             "<button onclick=\"act('/api/forehearth/gate', {path: 'warm_up'})\">开闸板</button>"

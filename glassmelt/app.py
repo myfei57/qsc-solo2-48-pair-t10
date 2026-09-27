@@ -319,7 +319,7 @@ class Platform:
 
             load_c = state.load * 12.0
             melt_c = self.furnace_temp.target_c + load_c - 4.0
-            if not self.igniter.is_burning():
+            if not self.igniter.is_burning() and not self.igniter.is_latched():
                 self.igniter.reignite(melt_c + 30.0, "窑温回落")
             self.furnace_temp.observe(melt_c)
 
@@ -428,9 +428,13 @@ class Platform:
         with self._lock:
             return self.igniter.reignite(flame_temperature_c, reason)
 
-    def release_ignition_latch(self) -> dict:
+    def release_ignition_latch(self, reason: str = "控制台人工确认") -> dict:
+        """人工确认解除点火闩锁：吹扫后回待机，两路连败清零。"""
+
         with self._lock:
-            return self.igniter.release_latch(self.config.burner.air_min_flow_m3_h * 0.9)
+            return self.igniter.release_latch(
+                self.config.burner.air_min_flow_m3_h * 0.9, reason=reason
+            )
 
     def open_forehearth_gate(self, path: str = "warm_up") -> dict:
         """按给定路径开闸板：初次升温走 warm_up，再升温走 reheat。"""
@@ -631,6 +635,7 @@ class Platform:
                 "/api/readiness",
                 "/api/batch/start",
                 "/api/burner/ignite",
+                "/api/burner/release",
                 "/api/burner/trip",
                 "/api/forehearth/gate",
                 "/api/mold/blow",

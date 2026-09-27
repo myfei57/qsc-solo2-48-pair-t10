@@ -137,6 +137,10 @@ def test_config_rejects_out_of_range_values():
     bad_draft["limits"]["furnace"]["draft_target_pa"] = 12.0
     with pytest.raises(ConfigError):
         PlatformConfig.from_mapping(bad_draft)
+    bad_burner = copy.deepcopy(mapping)
+    bad_burner["limits"]["burner"]["ignite_max_attempts"] = 0
+    with pytest.raises(ConfigError):
+        PlatformConfig.from_mapping(bad_burner)
 
 
 def test_missing_config_file_is_reported(tmp_path):

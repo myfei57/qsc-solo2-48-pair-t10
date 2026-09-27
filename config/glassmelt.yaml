@@ -16,6 +16,9 @@ limits:
     ignition_timeout_s: 6.0
     zone_count: 6
     flame_min_temp_c: 660.0
+    ignite_max_attempts: 3
+    relight_max_attempts: 2
+    purge_escalation_pct: 0.35
   forehearth:
     stable_band_c: 6.0
     stable_hold_s: 8.0
