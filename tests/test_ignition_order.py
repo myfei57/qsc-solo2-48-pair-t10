@@ -41,8 +41,13 @@ def test_purge_invalidates_air_state(platform):
 
 
 def test_failed_ignition_latches_and_can_be_released(platform):
+    retry_max = platform.config.burner.ignition_retry_max
+    for _ in range(retry_max):
+        retried = platform.ignite_burner(120.0)
+        assert retried["disposition"] == "retry"
     result = platform.ignite_burner(120.0)
     assert result["flame_ok"] is False
+    assert result["disposition"] == "lockout"
     assert platform.igniter.phase.value == "latched"
     assert platform.igniter.snapshot()["latches"] == 1
     with pytest.raises(SequenceError):

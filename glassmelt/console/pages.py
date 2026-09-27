@@ -82,6 +82,7 @@ def _operations(path: str) -> str:
             "<button onclick=\"act('/api/batch/start', {path: 'resume'})\">恢复投料</button>"
             "<button onclick=\"act('/api/burner/ignite', {path: 'ignite'})\">点火</button>"
             "<button onclick=\"act('/api/burner/ignite', {path: 'reignite', reason: '控制台'})\">重新点火</button>"
+            "<button class='warn' onclick=\"act('/api/burner/release', {reason: '控制台人工确认'})\">点火闩锁复位</button>"
             "<pre id='out-action'>等待操作</pre></section>"
             "<section><h2>供料与成型</h2>"
             "<button onclick=\"act('/api/forehearth/gate', {path: 'warm_up'})\">开闸板</button>"

@@ -99,6 +99,9 @@ class BurnerLimits:
     ignition_timeout_s: float
     zone_count: int
     flame_min_temp_c: float
+    ignition_retry_max: int
+    relight_max: int
+    purge_extend_factor: float
 
     @classmethod
     def from_mapping(cls, section: Mapping[str, Any]) -> "BurnerLimits":
@@ -108,6 +111,9 @@ class BurnerLimits:
             ignition_timeout_s=_number(section, "ignition_timeout_s", minimum=0.1),
             zone_count=int(_number(section, "zone_count", minimum=1.0)),
             flame_min_temp_c=_number(section, "flame_min_temp_c"),
+            ignition_retry_max=int(_number(section, "ignition_retry_max", minimum=0.0)),
+            relight_max=int(_number(section, "relight_max", minimum=0.0)),
+            purge_extend_factor=_number(section, "purge_extend_factor", minimum=1.0),
         )
         if limits.air_min_flow_m3_h <= 0:
             raise ConfigError("助燃风最小流量必须为正", component="config")
@@ -124,6 +130,12 @@ class BurnerLimits:
         """测得的火焰温度是否达到判燃下限。"""
 
         return float(temperature_c) >= self.flame_min_temp_c
+
+    def retry_purge_flow_m3_h(self, consecutive_failures: int) -> float:
+        """连续点不着时的吹扫风量：每多失败一次按倍率拉长吹扫。"""
+
+        steps = max(0, int(consecutive_failures) - 1)
+        return self.air_min_flow_m3_h * 0.9 * (self.purge_extend_factor**steps)
 
     def zone_names(self) -> tuple[str, ...]:
         """按分区数生成稳定的分区名。"""
@@ -413,6 +425,9 @@ def default_config() -> PlatformConfig:
             ignition_timeout_s=6.0,
             zone_count=6,
             flame_min_temp_c=660.0,
+            ignition_retry_max=3,
+            relight_max=2,
+            purge_extend_factor=1.5,
         ),
         forehearth=ForehearthLimits(
             stable_band_c=6.0,
@@ -479,6 +494,9 @@ def config_to_mapping(cfg: PlatformConfig) -> dict:
                 "ignition_timeout_s": cfg.burner.ignition_timeout_s,
                 "zone_count": cfg.burner.zone_count,
                 "flame_min_temp_c": cfg.burner.flame_min_temp_c,
+                "ignition_retry_max": cfg.burner.ignition_retry_max,
+                "relight_max": cfg.burner.relight_max,
+                "purge_extend_factor": cfg.burner.purge_extend_factor,
             },
             "forehearth": {
                 "stable_band_c": cfg.forehearth.stable_band_c,
